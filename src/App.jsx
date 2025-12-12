@@ -2,14 +2,14 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5000");
+const socket = io('http://' + document.domain + ':' + location.port);
 
 export default function App() {
   const [state, setState] = useState(null);
   const [log, setLog] = useState([]);
 
   useEffect(() => {
-    socket.on("connect", () => {
+    socket.on("connected", () => {
       console.log("connected", socket.id);
     });
     socket.on("game_state", (g) => {
