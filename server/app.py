@@ -403,9 +403,11 @@ def on_stack_add(data):
         emit('stack_rejected', {'reason': 'game_not_found'}, to=sid); return
     id = data.get('piece_id')
     p = game.get_piece(id)
-    p.stun += 1
     if game.action_done.get(p.color):
-        emit('move_rejected', {'reason':'already_moved_this_turn'}, to=sid); return
+        emit('stack_rejected', {'reason':'already_moved_this_turn'}, to=sid); return
+    if p.type=='king':
+        emit('stack_rejected', {'reason':'can_not_add_stun_king'}, to=sid); return
+    p.stun += 1
     game.action_done[p.color] = True
     socketio.emit('game_state', game.to_json(), to=game.id)
 
