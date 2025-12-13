@@ -19,7 +19,8 @@ const pieceStyle = (isStunned, isSelected) => ({
   textShadow: isStunned ? '0 0 5px red' : 'none',
   userSelect: 'none', // Prevent text selection and potential dragging
   border: isSelected ? '2px solid blue' : 'none', // Add border for selected piece
-  boxSizing: 'border-box' // Ensure border doesn't expand the element
+  boxSizing: 'border-box', // Ensure border doesn't expand the element
+  height: '50px'
 });
 
 const stackStyle = {

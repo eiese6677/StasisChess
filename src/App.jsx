@@ -1,10 +1,11 @@
 // client/src/App.jsx
+import { useState } from "react";
 import { useGame } from "./hooks/useGame";
 import Board from "./components/Board";
 import Hand from "./components/Hand";
 
 const styles = {
-  root: { position: 'relative', padding: 20, display: 'flex', gap: '20px' },
+  root: { position: 'relative', display: 'flex', gap: '20px', zoom: '95%' },
   gameArea: { display: 'flex', flexDirection: 'column', gap: '10px' },
   turnInfo: { marginTop: 10 },
   sideBar: { display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -27,6 +28,7 @@ const styles = {
 
 export default function App() {
   const { gameState, log, selectedPiece, gameId, gameOver, winner, handleSelect, handleSelectFromHand, endTurn } = useGame();
+  const [showLog, setShowLog] = useState(false);
 
   if (!gameState) {
     return <div>Loading...</div>;
@@ -51,10 +53,16 @@ export default function App() {
       <div style={styles.sideBar}>
         <Hand color="w" pieces={gameState.pieces} hands={gameState.hands} onSelect={handleSelectFromHand} selectedPiece={selectedPiece} />
         <Hand color="b" pieces={gameState.pieces} hands={gameState.hands} onSelect={handleSelectFromHand} selectedPiece={selectedPiece} />
-        <h3>Log</h3>
-        <div style={styles.log}>
-          {log.map((l, i) => (<div key={i}>{l}</div>))}
-        </div>
+        <button onClick={() => setShowLog(prev => !prev)}>
+          {showLog ? 'Hide Log' : 'Show Log'}
+        </button>
+        {showLog && (
+          <>
+            <div style={styles.log}>
+              {log.map((l, i) => (<div key={i}>{l}</div>))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

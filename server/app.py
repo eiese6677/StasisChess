@@ -44,6 +44,7 @@ class Piece:
         # 만약 스택이 쌓여있는 기물을 잡았을 경우, 그 스택이 잡은 기물에게 이전된다.
         self.stun += target.stun
         self.move_stack += target.move_stack
+        target.color = self.color
 
     def end_turn(self):
         # 이동 스텍은 스턴 스텍이 턴을 넘겨서 1씩 사라질 때마다 1씩 늘어난다.

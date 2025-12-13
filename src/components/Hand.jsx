@@ -5,7 +5,7 @@ import Piece from './Piece';
 const handStyle = {
     display: 'flex',
     flexWrap: 'wrap',
-    minHeight: '50px',
+    minHeight: '210px',
     width: '400px',
     backgroundColor: '#eee',
     padding: '5px',
@@ -30,8 +30,8 @@ export default function Hand({ color, pieces, hands, onSelect, selectedPiece }) 
                     if (!piece) return null;
                     const isSelected = selectedPiece && selectedPiece.id === pid;
                     return (
-                        <div key={`${pid}-${index}`} onClick={() => onSelect(piece)} style={{...pieceWrapperStyle, backgroundColor: isSelected ? 'yellow' : 'transparent'}}>
-                           <Piece type={piece.type} color={piece.color} stun={piece.stun} moveStack={piece.move_stack} isSelected={isSelected} />
+                        <div key={`${pid}-${index}`} onClick={() => onSelect(piece)} style={{ ...pieceWrapperStyle, backgroundColor: isSelected ? 'yellow' : 'transparent' }}>
+                            <Piece type={piece.type} color={piece.color} stun={piece.stun} moveStack={piece.move_stack} isSelected={isSelected} />
                         </div>
                     )
                 })}
