@@ -111,7 +111,7 @@ class Pawn(Piece):
         super().__init__(pid, 'pawn', color, pos)
 
     def can_move(self, frm, to, board):
-        dir = 1 if self.color=='w' else -1
+        dir = 1 if self.color=='b' else -1
         if to[0]==frm[0] and to[1]==frm[1]+dir:
             return board[to[1]][to[0]] is None
         
@@ -216,20 +216,34 @@ class Game:
             return False, f"piece stunned. remain stun stack : {piece.stun}"
         if not piece.can_move(frm,to,self.board_pieces()):
             return False, "illegal move for piece"
+        
         target_id = self.board[y2][x2]
+        is_win = False
         if target_id is not None:
             target = self.pieces[target_id]
             if target.color == piece.color:
                 return False, "cannot capture own piece"
+            
+            # Check for win condition (king capture)
+            if target.type == 'king':
+                is_win = True
+
             piece.capture(target)
             target.pos = None; target.captured=True; target.stun=0; target.move_stack=0
             self.hands[player_color].append(target_id)
             self.board[y2][x2] = None
+        
         # move
         self.board[y1][x1] = None
         self.board[y2][x2] = id
         piece.pos = (x2,y2)
+        piece.move_stack -= 1
+        
         self.history.append({"action":"move","player":player_color,"piece":id,"from":[x1,y1],"to":[x2,y2]})
+
+        if is_win:
+            return True, "win"
+        
         return True, "moved"
 
     def board_pieces(self):
@@ -241,15 +255,14 @@ class Game:
                     b[y][x] = self.pieces[id]
         return b
 
-    def safe_after_move(self, id, frm, to):
+    def safe_after_move(self, id, frm, to,color):
         gcopy = copy.deepcopy(self)
         ok, msg = gcopy.move_piece(gcopy.pieces[id].color, id, frm, to)
         if not ok:
             return False
-        own_color = self.pieces[id].color
         king_exists = False
         for p in gcopy.pieces.values():
-            if p.type=='king' and p.color==own_color and p.pos is not None:
+            if p.type=='king' and p.color==color and p.pos is not None:
                 king_exists = True
         return king_exists
 
@@ -329,16 +342,20 @@ def on_move_request(data):
     if not piece.can_move(frm,to,game.board_pieces()):
         emit('move_rejected', {'reason':'illegal_move'}, to=sid); return
     
-    if not game.safe_after_move(pid, frm, to):
+    if not game.safe_after_move(pid, frm, to,piece.color):
         emit('move_rejected', {'reason':'suicide_or_king_lost'}, to=sid); return
 
     ok,msg = game.move_piece(player_color, pid, frm, to)
     if not ok:
         emit('move_rejected', {'reason':msg}, to=sid); return
-
     game.action_done[player_color] = True
     socketio.emit('move_accepted', {'by': player_color, 'move': {'piece':pid,'from':frm,'to':to}}, to=game.id)
     socketio.emit('game_state', game.to_json(), to=game.id)
+    if msg == "win":
+        winner = player_color
+        loser = 'b' if player_color == 'w' else 'w'
+        socketio.emit('game_end', {'winner': winner, 'loser': loser, 'reason': 'king_capture'}, to=game.id)
+        return
 
 @socketio.on('drop_request')
 def on_drop_request(data):
@@ -353,14 +370,11 @@ def on_drop_request(data):
 
     if player_color != game.turn:
         emit('drop_rejected', {'reason':'not_your_turn'}, to=sid); return
-    if game.action_done.get(player_color):
-        emit('drop_rejected', {'reason':'already_moved_this_turn'}, to=sid); return
-
+    
     ok,msg = game.drop_piece(player_color, pid, to[0], to[1])
     if not ok:
         emit('drop_rejected', {'reason':msg}, to=sid); return
 
-    game.action_done[player_color] = True
     socketio.emit('drop_accepted', {'by': player_color, 'piece': pid, 'to': to}, to=game.id)
     socketio.emit('game_state', game.to_json(), to=game.id)
 

@@ -31,7 +31,7 @@ export default function Hand({ color, pieces, hands, onSelect, selectedPiece }) 
                     const isSelected = selectedPiece && selectedPiece.id === pid;
                     return (
                         <div key={`${pid}-${index}`} onClick={() => onSelect(piece)} style={{...pieceWrapperStyle, backgroundColor: isSelected ? 'yellow' : 'transparent'}}>
-                           <Piece type={piece.type} color={piece.color} stun={piece.stun} moveStack={piece.move_stack} />
+                           <Piece type={piece.type} color={piece.color} stun={piece.stun} moveStack={piece.move_stack} isSelected={isSelected} />
                         </div>
                     )
                 })}

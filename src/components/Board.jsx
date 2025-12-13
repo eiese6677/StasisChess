@@ -22,7 +22,7 @@ const staticCellStyle = {
   alignItems: 'center'
 };
 
-const Cell = ({ x, y, piece, onSelect }) => {
+const Cell = ({ x, y, piece, onSelect, isSelected }) => {
   const isBlack = (x + y) % 2 === 1;
   const cellColor = isBlack ? '#b58863' : '#f0d9b5';
   const cellStyle = {
@@ -32,12 +32,12 @@ const Cell = ({ x, y, piece, onSelect }) => {
 
   return (
     <div style={cellStyle} onClick={() => onSelect(x, y, piece)}>
-      {piece && <Piece type={piece.type} color={piece.color} stun={piece.stun} moveStack={piece.move_stack} />}
+      {piece && <Piece type={piece.type} color={piece.color} stun={piece.stun} moveStack={piece.move_stack} isSelected={isSelected} />}
     </div>
   );
 };
 
-export default function Board({ pieces, onSelect }) {
+export default function Board({ pieces, onSelect, selectedPiece }) {
   const board = Array(8).fill(null).map(() => Array(8).fill(null));
   for (const pieceId in pieces) {
     const piece = pieces[pieceId];
@@ -56,7 +56,9 @@ export default function Board({ pieces, onSelect }) {
           // board is indexed by [y][x] but our display iterates y from 7 down to 0
           const y = 7 - y_idx;
           const x = x_idx;
-          return <Cell key={`${x}-${y}`} x={x} y={y} piece={board[y][x]} onSelect={onSelect} />;
+          const pieceOnBoard = board[y][x];
+          const isSelected = selectedPiece && pieceOnBoard && selectedPiece.id === pieceOnBoard.id;
+          return <Cell key={`${x}-${y}`} x={x} y={y} piece={pieceOnBoard} onSelect={onSelect} isSelected={isSelected} />;
         })
       )}
     </div>

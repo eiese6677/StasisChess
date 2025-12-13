@@ -9,6 +9,8 @@ export const useGame = () => {
   const [log, setLog] = useState([]);
   const [selectedPiece, setSelectedPiece] = useState(null);
   const [gameId, setGameId] = useState(null);
+  const [gameOver, setGameOver] = useState(false);
+  const [winner, setWinner] = useState(null);
 
   useEffect(() => {
     socket.on("connected", (data) => {
@@ -28,6 +30,12 @@ export const useGame = () => {
     });
     socket.on("drop_rejected", (d) => setLog(l => [`Drop rejected: ${d.reason}`, ...l]));
     socket.on("turn_ended", (d) => setLog(l => [`New turn: ${d.turn}'s move`, ...l]));
+    socket.on("game_end", (data) => {
+        setLog(l => [`Game Over: ${data.winner} wins!`, ...l]);
+        setGameOver(true);
+        setWinner(data.winner);
+        setSelectedPiece(null);
+    });
 
     return () => {
         socket.off("connected");
@@ -37,11 +45,12 @@ export const useGame = () => {
         socket.off("drop_accepted");
         socket.off("drop_rejected");
         socket.off("turn_ended");
+        socket.off("game_end");
     };
   }, []);
 
   const handleSelect = (x, y, piece) => {
-    if (!gameState) return;
+    if (!gameState || gameOver) return;
     // If a piece is already selected
     if (selectedPiece) {
       // If the selected piece is from hand (a drop)
@@ -83,7 +92,7 @@ export const useGame = () => {
   };
 
   const handleSelectFromHand = (piece) => {
-    if (!gameState) return;
+    if (!gameState || gameOver) return;
     if (piece.color !== gameState.turn) {
       console.log("Cannot select opponent's piece from hand.");
       return;
@@ -97,9 +106,10 @@ export const useGame = () => {
   };
 
   const endTurn = () => {
+    if (gameOver) return;
     socket.emit("end_turn");
     setSelectedPiece(null);
   };
 
-  return { gameState, log, selectedPiece, gameId, handleSelect, handleSelectFromHand, endTurn };
+  return { gameState, log, selectedPiece, gameId, gameOver, winner, handleSelect, handleSelectFromHand, endTurn };
 };
