@@ -352,17 +352,8 @@ class Game:
         if not piece:
             return []
 
-        if piece.captured: # Dropping a captured piece
-            moves = []
-            for y in range(8):
-                for x in range(8):
-                    if self.pos_empty(x, y):
-                        # Simplified drop validation, real implementation would have more rules
-                        if piece.type == 'pawn':
-                            if piece.color == 'w' and y == 7: continue
-                            if piece.color == 'b' and y == 0: continue
-                        moves.append([x, y])
-            return moves
+        if piece.captured:
+            return []
 
         if piece.stun > 0 or piece.move_stack < 1:
             return []
