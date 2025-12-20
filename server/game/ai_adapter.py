@@ -64,10 +64,10 @@ def apply_action(game, action):
 
     if kind == "move":
         _, pid, frm, to = action
-        game.move_piece(game.turn, pid, frm, to)
+        return game.move_piece(game.turn, pid, frm, to)
 
     elif kind == "drop":
         _, pid, to = action
-        game.drop_piece(game.turn, pid, to[0], to[1])
+        return game.drop_piece(game.turn, pid, to[0], to[1])
 
-    return game
+    return False, "unknown action"

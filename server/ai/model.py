@@ -33,7 +33,7 @@ def evaluate_board(game):
                 score -= value
     return score
 
-def negamax(game, depth, alpha, beta, color):
+def negamax(game, depth, alpha, beta, color, excluded_actions=None):
     """네가맥스 알고리즘으로 최적의 수를 찾습니다."""
     
     # 게임이 끝났거나 깊이가 0에 도달하면, 현재 플레이어 관점의 평가 점수를 반환합니다.
@@ -56,9 +56,14 @@ def negamax(game, depth, alpha, beta, color):
         return 0, None
 
     for action in actions:
+        if excluded_actions and action in excluded_actions:
+             continue
+
         # 액션을 적용하여 자식 노드 게임 상태를 만듭니다.
         child_game = clone_game(game)
-        apply_action(child_game, action)
+        success, _ = apply_action(child_game, action)
+        if not success:
+            continue
         child_game.end_turn() # 시뮬레이션에서 턴을 넘깁니다.
 
         # 상대방에 대한 재귀 호출
@@ -75,10 +80,10 @@ def negamax(game, depth, alpha, beta, color):
 
     return best_value, best_action
 
-def negamax_best_action(game, depth):
+def negamax_best_action(game, depth, excluded_actions=None):
     """AI의 메인 함수. 네가맥스 탐색을 시작하고 최적의 수를 반환합니다."""
     if is_game_over(game):
         return None
     
-    _, action = negamax(game, depth, -float('inf'), float('inf'), game.turn)
+    _, action = negamax(game, depth, -float('inf'), float('inf'), game.turn, excluded_actions=excluded_actions)
     return action

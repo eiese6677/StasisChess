@@ -54,21 +54,33 @@ def maybe_ai_move(game):
             return
 
     # Use Negamax with a reasonable depth
-    action = negamax_best_action(game, depth=2) 
-    
-    if action is None:
-        print("AI has no moves or game is over.")
-        return
+    excluded_actions = []
+    max_retries = 20
 
-    print(f"AI chose negamax action: {action}")
-
-    # Apply the action
-    apply_action(game, action)
-    game.action_done[AI_COLOR] = True
-    socketio.emit('game_state', game.to_json(), to=game.id)
+    for _ in range(max_retries):
+        action = negamax_best_action(game, depth=2, excluded_actions=excluded_actions)
+        
+        if action is None:
+            print("AI has no moves or game is over.")
+            return
     
-    if is_game_over(game):
-        socketio.emit('game_end', {'winner': AI_COLOR, 'loser': 'w', 'reason': 'king_capture'}, to=game.id)
+        print(f"AI chose negamax action: {action}")
+    
+        # Apply the action
+        success, msg = apply_action(game, action)
+        if success:
+            game.action_done[AI_COLOR] = True
+            socketio.emit('game_state', game.to_json(), to=game.id)
+            
+            if is_game_over(game):
+                socketio.emit('game_end', {'winner': AI_COLOR, 'loser': 'w', 'reason': 'king_capture'}, to=game.id)
+                return
+            break # Success, exit loop
+        else:
+            print(f"AI move failed: {msg}. Retrying...")
+            excluded_actions.append(action)
+    else:
+        print("AI failed to find valid move after max retries")
         return
 
     # AI의 턴을 종료한다.
