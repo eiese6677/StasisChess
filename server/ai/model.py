@@ -48,7 +48,10 @@ def negamax(game, depth, alpha, beta, color):
     best_value = -float('inf')
     best_action = None
     
-    actions = get_all_actions(game, color)
+    # Optimization: Only consider drops at higher depths (Root) to reduce branching factor.
+    # If depth=1 (Leaf node checking opponent reply), ignore drops.
+    include_drops = (depth > 1) 
+    actions = get_all_actions(game, color, include_drops=include_drops)
     if not actions: # 움직일 수 있는 수가 없음 (스테일메이트)
         return 0, None
 

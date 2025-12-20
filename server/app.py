@@ -1,7 +1,7 @@
 # server/app.py
 from flask import Flask, request
 from flask_socketio import SocketIO, emit, join_room
-from server.ai.model import negamax_best_action
+from server.ai.model import negamax_best_action, is_game_over
 from server.game.core import *
 import random
 from server.game.ai_adapter import apply_action, get_all_actions
@@ -67,6 +67,10 @@ def maybe_ai_move(game):
     game.action_done[AI_COLOR] = True
     socketio.emit('game_state', game.to_json(), to=game.id)
     
+    if is_game_over(game):
+        socketio.emit('game_end', {'winner': AI_COLOR, 'loser': 'w', 'reason': 'king_capture'}, to=game.id)
+        return
+
     # AI의 턴을 종료한다.
     game.end_turn()
     socketio.emit('turn_ended', {'turn': game.turn}, to=game.id)

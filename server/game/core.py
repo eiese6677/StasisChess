@@ -47,6 +47,14 @@ class Piece:
             self.stun -= 1
             self.move_stack += 1
 
+    def clone(self):
+        # Create a new instance of the same class
+        new_piece = self.__class__(self.id, self.color, self.pos)
+        new_piece.type = self.type
+        new_piece.stun = self.stun
+        new_piece.move_stack = self.move_stack
+        return new_piece
+
 class Knight(Piece):
     def __init__(self, id, color, pos=None):
         super().__init__(id, 'knight', color, pos)
@@ -204,6 +212,33 @@ class Game:
 
         self.init_piece()
 
+    def fast_clone(self):
+        new_game = Game.__new__(Game) # Skip init
+        new_game.id = self.id
+        new_game.turn = self.turn
+        
+        # Optimize: reuse immutable pieces if possible, or use fast shallow copy?
+        # Since pieces are mutable (pos, stun), we must copy them.
+        # But copy.copy is faster than class instantiation
+        new_game.pieces = {}
+        for pid, p in self.pieces.items():
+            new_game.pieces[pid] = copy.copy(p)
+            
+        # Optimize: Copy board directly instead of rebuilding
+        # self.board is list of lists of strings (immutable)
+        new_game.board = [row[:] for row in self.board]
+                
+        # Copy hands (list of strings)
+        new_game.hands = {'w': self.hands['w'][:], 'b': self.hands['b'][:]}
+        
+        # Skip history for AI
+        new_game.history = [] 
+        
+        new_game.first_turn_done = self.first_turn_done.copy()
+        new_game.action_done = self.action_done.copy()
+        
+        return new_game
+
     def init_piece(self):
         def add_piece(ptype, cnt, color):
             for i in range(cnt):
@@ -327,7 +362,7 @@ class Game:
         return b
 
     def safe_after_move(self, id, frm, to,color):
-        gcopy = copy.deepcopy(self)
+        gcopy = self.fast_clone()
         ok, msg = gcopy.move_piece(gcopy.pieces[id].color, id, frm, to)
         if not ok:
             return False
@@ -336,6 +371,14 @@ class Game:
             if p.type=='king' and p.color==color and p.pos is not None:
                 king_exists = True
         return king_exists
+
+    def get_legal_moves(self, piece_id):
+        piece = self.get_piece(piece_id)
+        if not piece:
+            return []
+
+        if piece.pos is None:
+            return []
 
     def get_legal_moves(self, piece_id):
         piece = self.get_piece(piece_id)
@@ -361,6 +404,27 @@ class Game:
                 legal_moves.append(to)
         
         return legal_moves
+
+    def get_pseudo_legal_moves(self, piece_id):
+        # Similar to get_legal_moves but SKIPS safe_after_move check
+        piece = self.get_piece(piece_id)
+        if not piece:
+            return []
+        if piece.pos is None:
+            return []
+        if piece.stun > 0 or piece.move_stack < 1:
+            return []
+
+        moves = []
+        frm = piece.pos
+        possible_moves = piece.get_possible_moves(frm, self.board_pieces())
+        
+        for to in possible_moves:
+            target_piece = self.get_piece_at(to[0], to[1])
+            if target_piece and target_piece.color == piece.color:
+                continue
+            moves.append(to)
+        return moves
 
     def end_turn(self):
         for id,p in self.pieces.items():
