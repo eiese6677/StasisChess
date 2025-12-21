@@ -30,7 +30,6 @@ class Piece:
 
     def drop(self, pos):
         self.pos = pos
-        self.stun = 1
         self.move_stack = 0
 
     def capture(self, target):
@@ -209,6 +208,7 @@ class Game:
         self.history = []
         self.first_turn_done = {'w':False,'b':False}
         self.action_done = {}
+        self.dropped = False
 
         self.init_piece()
 
@@ -287,6 +287,11 @@ class Game:
         return self.pieces.get(id)
 
     def drop_piece(self, player_color, id, x,y):
+        try:
+            if self.dropped:
+                return False, "already dropped"
+        except AttributeError:
+            self.dropped = True
         if id not in self.hands[player_color]:
             return False, "you don't own that piece"
         p = self.pieces[id]
@@ -304,12 +309,13 @@ class Game:
             else:
                 p.stun = (7-y) if y>=1 else 1
         else:
-            p.stun = max(1, p.stun)
+            p.stun = max(2, p.stun)
         p.drop((x,y))
         self.board[y][x] = id
         self.hands[player_color].remove(id)
         self.history.append({"action":"drop","player":player_color,"piece":id,"pos":[x,y]})
         self.first_turn_done[player_color] = True
+        self.dropped = True
         return True, "dropped"
 
     def move_piece(self, player_color, id, frm, to):
@@ -431,3 +437,19 @@ class Game:
             p.end_turn()
         self.turn = 'b' if self.turn=='w' else 'w'
         self.action_done = {}
+        self.dropped = False
+
+def can_p(game):
+    b = game.board
+    ls = []
+    # Iterate over valid board coordinates (y, x)
+    for y in range(8):
+        for x in range(8):
+            pid = b[y][x]
+            # Skip empty squares
+            if pid is None:
+                continue
+            if game.pieces[pid].type == 'pawn':
+                # Return coordinates as (x, y) to match other APIs
+                ls.append((x, y))
+    return ls

@@ -27,35 +27,10 @@ def maybe_ai_move(game):
     if game.turn != AI_COLOR:
         return
 
-    # 첫 턴이면 킹을 드롭
-    if not game.first_turn_done.get(AI_COLOR):
-        king_id = None
-        for pid in game.hands[AI_COLOR]:
-            if game.pieces[pid].type == 'king':
-                king_id = pid
-                break
-        
-        if king_id:
-            # AI(흑)는 킹을 (4, 7)에 놓는다
-            ok, msg = game.drop_piece(AI_COLOR, king_id, 4, 7)
-            if ok:
-                print(f"AI drops king at (4, 7)")
-                game.action_done[AI_COLOR] = True
-                socketio.emit('game_state', game.to_json(), to=game.id)
-                game.end_turn()
-                socketio.emit('turn_ended', {'turn': game.turn}, to=game.id)
-                socketio.emit('game_state', game.to_json(), to=game.id)
-                return
-            else:
-                print(f"AI failed to drop king: {msg}")
-                return
-        else:
-            print("AI has no king to drop.")
-            return
-
     # Use Negamax with a reasonable depth
+    # First turn (King drop) is now handled by generalized negamax
     excluded_actions = []
-    max_retries = 20
+    max_retries = 10000000
 
     for _ in range(max_retries):
         action = negamax_best_action(game, depth=2, excluded_actions=excluded_actions)
@@ -157,6 +132,21 @@ def on_move_request(data):
     ok,msg = game.move_piece(player_color, pid, frm, to)
     if not ok:
         emit('move_rejected', {'reason':msg}, to=sid); return
+    
+    print(to[1])
+    print(piece.type)
+    if to[1] in (0, 7) and piece.type == "pawn":
+        # Promote pawn to a Queen instance (preserve id, color, pos)
+        x, y = to
+        promoted = Queen(pid, piece.color, pos=(x, y))
+        promoted.stun = 0
+        promoted.move_stack = 5
+        # Replace the piece object in the game with the promoted queen
+        game.pieces[pid] = promoted
+        # Ensure board entry remains consistent
+        game.board[y][x] = pid
+        print(f"Pawn {pid} promoted to Queen at {(x,y)}")
+        
     game.action_done[player_color] = True
     socketio.emit('move_accepted', {'by': player_color, 'move': {'piece':pid,'from':frm,'to':to}}, to=game.id)
     socketio.emit('game_state', game.to_json(), to=game.id)
