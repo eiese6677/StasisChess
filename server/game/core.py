@@ -309,7 +309,7 @@ class Game:
             else:
                 p.stun = (7-y) if y>=1 else 1
         else:
-            p.stun = max(2, p.stun)
+            p.stun = max(1, p.stun)
         p.drop((x,y))
         self.board[y][x] = id
         self.hands[player_color].remove(id)

@@ -1,0 +1,12 @@
+[project]
+name = "stasischess"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "flask>=3.1.2",
+    "flask-socketio>=5.6.0",
+    "python-socketio>=5.16.0",
+    "simple-websocket>=1.1.0",
+]
