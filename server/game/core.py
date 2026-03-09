@@ -432,12 +432,13 @@ class Game:
             moves.append(to)
         return moves
 
-    def end_turn(self):
-        for id,p in self.pieces.items():
-            p.end_turn()
-        self.turn = 'b' if self.turn=='w' else 'w'
-        self.action_done = {}
-        self.dropped = False
+    def end_turn(self,data):
+        if self.turn != data['player_color']:
+            for id,p in self.pieces.items():
+                p.end_turn()
+            self.turn = 'b' if self.turn=='w' else 'w'
+            self.action_done = {}
+            self.dropped = False
 
 def can_p(game):
     b = game.board

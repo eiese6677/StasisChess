@@ -1,10 +1,7 @@
 // src/hooks/useGame.jsx
 import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
 
-const socket = io("http://127.0.0.1:5000");
-
-export const useGame = () => {
+export const useGame = (socket, onGameEnd) => {
   const [gameState, setGameState] = useState(null);
   const [log, setLog] = useState([]);
   const [selectedPiece, setSelectedPiece] = useState(null);
@@ -13,6 +10,7 @@ export const useGame = () => {
   const [gameId, setGameId] = useState(null);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
+  const [color, setColor] = useState(null);
 
   useEffect(() => {
     socket.on("connected", (data) => {
@@ -20,7 +18,16 @@ export const useGame = () => {
       setGameId(data.game_id);
     });
 
-    socket.on("game_state", (g) => setGameState(g));
+    socket.on("joined", (data) => {
+      console.log("joined game:", data);
+      setGameId(data.game_id);
+      setColor(data.player_color);
+    });
+
+    socket.on("game_state", (g) => {
+      console.log("game_state received:", g);
+      setGameState(g);
+    });
     socket.on("move_accepted", (d) => {
       setLog(l => [`Move accepted: ${JSON.stringify(d)}`, ...l]);
       setSelectedPiece(null);
@@ -43,6 +50,8 @@ export const useGame = () => {
       setGameOver(true);
       setWinner(data.winner);
       setSelectedPiece(null);
+      // 게임 종료 콜백 호출
+      if (onGameEnd) onGameEnd(data);
     });
     socket.on("legal_moves", (data) => {
       setLegalMoves(data.moves);
@@ -50,6 +59,7 @@ export const useGame = () => {
 
     return () => {
       socket.off("connected");
+      socket.off("joined");
       socket.off("game_state");
       socket.off("move_accepted");
       socket.off("move_rejected");
@@ -61,7 +71,7 @@ export const useGame = () => {
       socket.off("game_end");
       socket.off("legal_moves");
     };
-  }, []);
+  }, [socket, onGameEnd]);
 
   const handleSelect = (x, y, piece) => {
     if (!gameState || gameOver) return;
@@ -125,7 +135,7 @@ export const useGame = () => {
 
   const endTurn = () => {
     if (gameOver) return;
-    socket.emit("end_turn");
+    socket.emit("end_turn", { player_color: color });
     setSelectedPiece(null);
     // setConfirmedPiece(null);
   };

@@ -2,7 +2,7 @@
 ```
 cd StasisChess
 npm install
-npm run dev
+npm run build
 ```
 백엔드
 ```
